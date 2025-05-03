@@ -61,27 +61,147 @@ def open_role_dashboard(role, user_id):
     dashboard = tk.Toplevel(root)
     dashboard.title(f"{role} Dashboard")
 
+    # if role == "Doctor":
+    #     # Doctor Schedule
+    #     tk.Label(dashboard, text="Your Schedule", font=("Arial", 14)).pack(pady=10)
+
+    #     conn = sqlite3.connect('healthcare.db')
+    #     c = conn.cursor()
+    #     c.execute("SELECT * FROM schedules WHERE doctor_id=?", (user_id,))
+    #     schedules = c.fetchall()
+
+    #     if schedules:
+    #         for schedule in schedules:
+    #             schedule_text = f"Date: {schedule[3]}, Time: {schedule[4]}, Patient ID: {schedule[2]}"
+    #             tk.Label(dashboard, text=schedule_text).pack()
+    #     else:
+    #         tk.Label(dashboard, text="No appointments scheduled.").pack()
+
+    #     conn.close()
+
+    #     # Buttons for Doctor Features
+    #     tk.Button(dashboard, text="Generate Prescription", command=lambda: generate_prescription(user_id)).pack(pady=10)
+    #     tk.Button(dashboard, text="View Patient History", command=lambda: view_patient_history(user_id)).pack(pady=10)
+
     if role == "Doctor":
-        # Doctor Schedule
-        tk.Label(dashboard, text="Your Schedule", font=("Arial", 14)).pack(pady=10)
+        # Notebook for tabs
+        notebook = ttk.Notebook(dashboard)
+        notebook.pack(fill='both', expand=True)
 
-        conn = sqlite3.connect('healthcare.db')
-        c = conn.cursor()
-        c.execute("SELECT * FROM schedules WHERE doctor_id=?", (user_id,))
-        schedules = c.fetchall()
+        # Tab 1: View Schedule
+        schedule_frame = ttk.Frame(notebook)
+        notebook.add(schedule_frame, text='My Schedule')
 
-        if schedules:
-            for schedule in schedules:
-                schedule_text = f"Date: {schedule[3]}, Time: {schedule[4]}, Patient ID: {schedule[2]}"
-                tk.Label(dashboard, text=schedule_text).pack()
-        else:
-            tk.Label(dashboard, text="No appointments scheduled.").pack()
+        # Treeview for appointments
+        columns = ('id', 'patient_id', 'date', 'time')
+        tree = ttk.Treeview(schedule_frame, columns=columns, show='headings')
+        tree.heading('id', text='Appointment ID')
+        tree.heading('patient_id', text='Patient ID')
+        tree.heading('date', text='Date')
+        tree.heading('time', text='Time')
+        tree.pack(fill='both', expand=True, padx=10, pady=10)
 
-        conn.close()
+        # Refresh button
+        def refresh_schedule():
+            for item in tree.get_children():
+                tree.delete(item)
+            
+            conn = sqlite3.connect('healthcare.db')
+            c = conn.cursor()
+            c.execute("SELECT id, patient_id, date, time FROM schedules WHERE doctor_id=? ORDER BY date, time", (user_id,))
+            appointments = c.fetchall()
+            conn.close()
 
-        # Buttons for Doctor Features
-        tk.Button(dashboard, text="Generate Prescription", command=lambda: generate_prescription(user_id)).pack(pady=10)
-        tk.Button(dashboard, text="View Patient History", command=lambda: view_patient_history(user_id)).pack(pady=10)
+            for appt in appointments:
+                tree.insert('', 'end', values=appt)
+
+        refresh_btn = ttk.Button(schedule_frame, text="Refresh Schedule", command=refresh_schedule)
+        refresh_btn.pack(pady=10)
+
+        # Tab 2: Add Availability
+        availability_frame = ttk.Frame(notebook)
+        notebook.add(availability_frame, text='Add Availability')
+
+        # Date Entry
+        ttk.Label(availability_frame, text="Date:").pack(pady=5)
+        date_entry = ttk.Entry(availability_frame)
+        date_entry.pack(pady=5)
+        date_entry.insert(0, date.today().strftime("%Y-%m-%d"))
+
+        # Time Slot Frame
+        time_frame = ttk.Frame(availability_frame)
+        time_frame.pack(pady=10)
+
+        # Start Time
+        ttk.Label(time_frame, text="Start Time:").grid(row=0, column=0, padx=5)
+        start_hour = ttk.Combobox(time_frame, values=[f"{h:02d}" for h in range(9, 18)], width=3)
+        start_hour.grid(row=0, column=1, padx=5)
+        start_hour.set("09")
+        ttk.Label(time_frame, text=":").grid(row=0, column=2)
+        start_min = ttk.Combobox(time_frame, values=["00", "15", "30", "45"], width=3)
+        start_min.grid(row=0, column=3, padx=5)
+        start_min.set("00")
+
+        # End Time
+        ttk.Label(time_frame, text="End Time:").grid(row=1, column=0, padx=5)
+        end_hour = ttk.Combobox(time_frame, values=[f"{h:02d}" for h in range(9, 18)], width=3)
+        end_hour.grid(row=1, column=1, padx=5)
+        end_hour.set("17")
+        ttk.Label(time_frame, text=":").grid(row=1, column=2)
+        end_min = ttk.Combobox(time_frame, values=["00", "15", "30", "45"], width=3)
+        end_min.grid(row=1, column=3, padx=5)
+        end_min.set("00")
+
+        # Duration
+        ttk.Label(availability_frame, text="Appointment Duration (minutes):").pack(pady=5)
+        duration = ttk.Combobox(availability_frame, values=[15, 30, 45, 60], width=5)
+        duration.pack(pady=5)
+        duration.set(30)
+
+        def add_availability():
+            try:
+                appt_date = date_entry.get()
+                start_time = f"{start_hour.get()}:{start_min.get()}"
+                end_time = f"{end_hour.get()}:{end_min.get()}"
+                duration_val = int(duration.get())
+                
+                # Validate inputs
+                datetime.strptime(appt_date, "%Y-%m-%d")
+                datetime.strptime(start_time, "%H:%M")
+                datetime.strptime(end_time, "%H:%M")
+                
+                # Generate time slots
+                conn = sqlite3.connect('healthcare.db')
+                c = conn.cursor()
+                
+                current_time = datetime.strptime(start_time, "%H:%M")
+                end_time_dt = datetime.strptime(end_time, "%H:%M")
+                
+                while current_time + timedelta(minutes=duration_val) <= end_time_dt:
+                    slot_end = current_time + timedelta(minutes=duration_val)
+                    
+                    # Check if slot already exists
+                    c.execute("SELECT id FROM schedules WHERE doctor_id=? AND date=? AND time=?",
+                            (user_id, appt_date, current_time.strftime("%H:%M")))
+                    if not c.fetchone():
+                        c.execute("INSERT INTO schedules (doctor_id, date, time) VALUES (?, ?, ?)",
+                                (user_id, appt_date, current_time.strftime("%H:%M")))
+                    
+                    current_time = slot_end
+                
+                conn.commit()
+                conn.close()
+                messagebox.showinfo("Success", "Availability slots added!")
+                refresh_schedule()
+            except Exception as e:
+                messagebox.showerror("Error", f"Invalid input: {str(e)}")
+
+        add_btn = ttk.Button(availability_frame, text="Add Availability Slots", command=add_availability)
+        add_btn.pack(pady=20)
+
+        # Tab 3: Patient Management
+        patient_frame = ttk.Frame(notebook)
+        notebook.add(patient_frame, text='Patient Management')
 
     elif role == "Patient":
         # Book Appointment
@@ -180,6 +300,7 @@ def download_prescription(patient_id):
         messagebox.showinfo("Success", "Prescriptions downloaded!")
     else:
         messagebox.showwarning("No Data", "No prescriptions found")
+
 
 # Patient History Functions
 def view_patient_history(doctor_id):
