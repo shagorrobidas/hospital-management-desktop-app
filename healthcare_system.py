@@ -3,41 +3,44 @@ from tkinter import messagebox, ttk
 import sqlite3
 from datetime import datetime, date, timedelta
 
+
 # Database setup
 def create_db():
     conn = sqlite3.connect('healthcare.db')
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS users
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                  username TEXT, 
-                  password TEXT, 
-                  role TEXT,
-                  name TEXT,
-                  specialization TEXT DEFAULT '',
-                  contact TEXT DEFAULT '')''')
+                (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT,
+                    password TEXT,
+                    role TEXT,
+                    name TEXT,
+                    specialization TEXT DEFAULT '',
+                    contact TEXT DEFAULT '')''')
     c.execute('''CREATE TABLE IF NOT EXISTS schedules
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                  doctor_id INTEGER, 
-                  patient_id INTEGER, 
-                  date TEXT, 
-                  time TEXT,
-                  status TEXT DEFAULT 'Available')''')
+                (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    doctor_id INTEGER,
+                    patient_id INTEGER,
+                    date TEXT,
+                    time TEXT,
+                    status TEXT DEFAULT 'Available')''')
     c.execute('''CREATE TABLE IF NOT EXISTS prescriptions
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                  doctor_id INTEGER, 
-                  patient_id INTEGER, 
-                  prescription TEXT,
-                  date TEXT)''')
+                (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    doctor_id INTEGER,
+                    patient_id INTEGER,
+                    prescription TEXT,
+                    date TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS patient_history
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                  patient_id INTEGER, 
-                  doctor_id INTEGER, 
-                  record TEXT, 
-                  date TEXT)''')
+                (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    patient_id INTEGER,
+                    doctor_id INTEGER,
+                    record TEXT,
+                    date TEXT)''')
     conn.commit()
     conn.close()
 
+
 create_db()
+
 
 # Prescription Functions
 def generate_prescription(doctor_id):
@@ -61,8 +64,7 @@ def generate_prescription(doctor_id):
         if patient_id and prescription.strip():
             conn = sqlite3.connect('healthcare.db')
             c = conn.cursor()
-            c.execute("INSERT INTO prescriptions (doctor_id, patient_id, prescription, date) VALUES (?, ?, ?, ?)",
-                      (doctor_id, patient_id, prescription.strip(), today))
+            c.execute("INSERT INTO prescriptions (doctor_id, patient_id, prescription, date) VALUES (?, ?, ?, ?)", (doctor_id, patient_id, prescription.strip(), today)) # noqa
             conn.commit()
             conn.close()
             messagebox.showinfo("Success", "Prescription saved!")
@@ -70,8 +72,13 @@ def generate_prescription(doctor_id):
         else:
             messagebox.showwarning("Input Error", "Please fill all fields")
 
-    save_btn = ttk.Button(prescription_window, text="Save Prescription", command=save_prescription)
+    save_btn = ttk.Button(
+        prescription_window,
+        text="Save Prescription",
+        command=save_prescription
+    )
     save_btn.pack(pady=10)
+
 
 def download_prescription(patient_id):
     conn = sqlite3.connect('healthcare.db')
@@ -87,6 +94,7 @@ def download_prescription(patient_id):
         messagebox.showinfo("Success", "Prescriptions downloaded!")
     else:
         messagebox.showwarning("No Data", "No prescriptions found")
+
 
 # Patient History Functions
 def view_patient_history(doctor_id):
@@ -114,22 +122,30 @@ def view_patient_history(doctor_id):
         if patient_id:
             conn = sqlite3.connect('healthcare.db')
             c = conn.cursor()
-            c.execute("SELECT * FROM patient_history WHERE patient_id=?", (patient_id,))
+            c.execute(
+                "SELECT * FROM patient_history WHERE patient_id=?",
+                (patient_id,)
+            )
             history = c.fetchall()
             conn.close()
 
             history_text.delete(1.0, tk.END)
             if history:
                 for record in history:
-                    record_text = f"Date: {record[4]}\nDoctor ID: {record[2]}\nRecord: {record[3]}\n{'='*50}\n"
+                    record_text = f"Date: {record[4]}\nDoctor ID: {record[2]}\nRecord: {record[3]}\n{'='*50}\n"  # noqa
                     history_text.insert(tk.END, record_text)
             else:
-                history_text.insert(tk.END, "No history found for this patient.")
+                history_text.insert(tk.END, "No history found for this patient.") # noqa
         else:
             messagebox.showwarning("Input Error", "Please enter a patient ID")
 
-    fetch_btn = ttk.Button(history_window, text="Fetch History", command=fetch_history)
+    fetch_btn = ttk.Button(
+        history_window,
+        text="Fetch History",
+        command=fetch_history
+    )
     fetch_btn.pack(pady=10)
+
 
 # Admin Functions
 def view_all_users():
@@ -137,7 +153,7 @@ def view_all_users():
     users_window.title("All Users")
     users_window.geometry("800x400")
 
-    tree = ttk.Treeview(users_window, columns=('id', 'username', 'name', 'role', 'specialization', 'contact'), show='headings')
+    tree = ttk.Treeview(users_window, columns=('id', 'username', 'name', 'role', 'specialization', 'contact'), show='headings') # noqa
     tree.heading('id', text='ID')
     tree.heading('username', text='Username')
     tree.heading('name', text='Name')
@@ -148,19 +164,20 @@ def view_all_users():
 
     conn = sqlite3.connect('healthcare.db')
     c = conn.cursor()
-    c.execute("SELECT id, username, name, role, specialization, contact FROM users")
+    c.execute("SELECT id, username, name, role, specialization, contact FROM users") # noqa
     users = c.fetchall()
     conn.close()
 
     for user in users:
         tree.insert('', 'end', values=user)
 
+
 def view_all_schedules():
     schedules_window = tk.Toplevel(root)
     schedules_window.title("All Schedules")
     schedules_window.geometry("800x400")
 
-    tree = ttk.Treeview(schedules_window, columns=('id', 'doctor_id', 'patient_id', 'date', 'time', 'status'), show='headings')
+    tree = ttk.Treeview(schedules_window, columns=('id', 'doctor_id', 'patient_id', 'date', 'time', 'status'), show='headings') # noqa
     tree.heading('id', text='ID')
     tree.heading('doctor_id', text='Doctor ID')
     tree.heading('patient_id', text='Patient ID')
@@ -171,19 +188,22 @@ def view_all_schedules():
 
     conn = sqlite3.connect('healthcare.db')
     c = conn.cursor()
-    c.execute("SELECT id, doctor_id, patient_id, date, time, status FROM schedules")
+    c.execute("SELECT id, doctor_id, patient_id, date, time, status FROM schedules") # noqa
     schedules = c.fetchall()
     conn.close()
 
     for schedule in schedules:
         tree.insert('', 'end', values=schedule)
 
+
 def view_all_prescriptions():
     prescriptions_window = tk.Toplevel(root)
     prescriptions_window.title("All Prescriptions")
     prescriptions_window.geometry("800x400")
 
-    tree = ttk.Treeview(prescriptions_window, columns=('id', 'doctor_id', 'patient_id', 'date'), show='headings')
+    tree = ttk.Treeview(
+        prescriptions_window, columns=('id', 'doctor_id', 'patient_id', 'date'), # noqa
+        show='headings')
     tree.heading('id', text='ID')
     tree.heading('doctor_id', text='Doctor ID')
     tree.heading('patient_id', text='Patient ID')
@@ -206,13 +226,13 @@ def view_all_prescriptions():
         if selected_item:
             item = tree.item(selected_item)
             prescription_id = item['values'][0]
-            
+
             conn = sqlite3.connect('healthcare.db')
             c = conn.cursor()
-            c.execute("SELECT prescription FROM prescriptions WHERE id=?", (prescription_id,))
+            c.execute("SELECT prescription FROM prescriptions WHERE id=?", (prescription_id,)) # noqa
             prescription = c.fetchone()
             conn.close()
-            
+
             prescription_text.delete(1.0, tk.END)
             if prescription:
                 prescription_text.insert(tk.END, prescription[0])
@@ -228,6 +248,7 @@ def view_all_prescriptions():
     for prescription in prescriptions:
         tree.insert('', 'end', values=prescription)
 
+
 # User Registration
 def register_user():
     username = entry_username.get()
@@ -238,8 +259,7 @@ def register_user():
     if username and password and role:
         conn = sqlite3.connect('healthcare.db')
         c = conn.cursor()
-        c.execute("INSERT INTO users (username, password, role, name) VALUES (?, ?, ?, ?)", 
-                  (username, password, role, name))
+        c.execute("INSERT INTO users (username, password, role, name) VALUES (?, ?, ?, ?)", (username, password, role, name)) # noqa
         conn.commit()
         conn.close()
         messagebox.showinfo("Success", "User registered successfully!")
@@ -247,11 +267,13 @@ def register_user():
     else:
         messagebox.showwarning("Input Error", "Please fill all fields")
 
+
 def clear_register_fields():
     entry_username.delete(0, tk.END)
     entry_password.delete(0, tk.END)
     entry_name.delete(0, tk.END)
     role_var.set("Patient")
+
 
 # Login Function
 def login():
@@ -260,7 +282,7 @@ def login():
 
     conn = sqlite3.connect('healthcare.db')
     c = conn.cursor()
-    c.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
+    c.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password)) # noqa
     user = c.fetchone()
     conn.close()
 
@@ -269,6 +291,7 @@ def login():
         open_role_dashboard(role, user[0])
     else:
         messagebox.showerror("Login Failed", "Invalid username or password")
+
 
 # Role-Based Dashboards
 def open_role_dashboard(role, user_id):
@@ -288,13 +311,13 @@ def open_role_dashboard(role, user_id):
 
     info_frame = ttk.LabelFrame(dashboard, text="User Information")
     info_frame.pack(fill='x', padx=10, pady=10)
-    
-    ttk.Label(info_frame, text=f"ID: {user_info[0]}").grid(row=0, column=0, sticky='w')
-    ttk.Label(info_frame, text=f"Name: {user_info[4]}").grid(row=0, column=1, sticky='w')
-    ttk.Label(info_frame, text=f"Role: {user_info[3]}").grid(row=0, column=2, sticky='w')
+
+    ttk.Label(info_frame, text=f"ID: {user_info[0]}").grid(row=0, column=0, sticky='w') # noqa
+    ttk.Label(info_frame, text=f"Name: {user_info[4]}").grid(row=0, column=1, sticky='w') # noqa
+    ttk.Label(info_frame, text=f"Role: {user_info[3]}").grid(row=0, column=2, sticky='w')   # noqa
     if role == "Doctor":
-        ttk.Label(info_frame, text=f"Specialization: {user_info[5]}").grid(row=1, column=0, sticky='w')
-        ttk.Label(info_frame, text=f"Contact: {user_info[6]}").grid(row=1, column=1, sticky='w')
+        ttk.Label(info_frame, text=f"Specialization: {user_info[5]}").grid(row=1, column=0, sticky='w') # noqa
+        ttk.Label(info_frame, text=f"Contact: {user_info[6]}").grid(row=1, column=1, sticky='w')  # noqa
 
     if role == "Admin":
         admin_dashboard(dashboard, user_id)
@@ -302,6 +325,7 @@ def open_role_dashboard(role, user_id):
         doctor_dashboard(dashboard, user_id)
     elif role == "Patient":
         patient_dashboard(dashboard, user_id)
+
 
 def admin_dashboard(dashboard, user_id):
     notebook = ttk.Notebook(dashboard)
@@ -311,8 +335,8 @@ def admin_dashboard(dashboard, user_id):
     users_frame = ttk.Frame(notebook)
     notebook.add(users_frame, text='Manage Users')
 
-    user_columns = ('id', 'username', 'name', 'role', 'specialization', 'contact')
-    user_tree = ttk.Treeview(users_frame, columns=user_columns, show='headings')
+    user_columns = ('id', 'username', 'name', 'role', 'specialization', 'contact') # noqa
+    user_tree = ttk.Treeview(users_frame, columns=user_columns, show='headings') # noqa
     user_tree.heading('id', text='ID')
     user_tree.heading('username', text='Username')
     user_tree.heading('name', text='Name')
@@ -324,25 +348,25 @@ def admin_dashboard(dashboard, user_id):
     def refresh_users():
         for item in user_tree.get_children():
             user_tree.delete(item)
-        
+
         conn = sqlite3.connect('healthcare.db')
         c = conn.cursor()
-        c.execute("SELECT id, username, name, role, specialization, contact FROM users")
+        c.execute("SELECT id, username, name, role, specialization, contact FROM users") # noqa
         users = c.fetchall()
         conn.close()
 
         for user in users:
             user_tree.insert('', 'end', values=user)
 
-    refresh_btn = ttk.Button(users_frame, text="Refresh", command=refresh_users)
+    refresh_btn = ttk.Button(users_frame, text="Refresh", command=refresh_users) # noqa
     refresh_btn.pack(pady=10)
 
     # Tab 2: Manage Appointments
     appointments_frame = ttk.Frame(notebook)
     notebook.add(appointments_frame, text='Appointments')
 
-    appt_columns = ('id', 'doctor_id', 'doctor_name', 'patient_id', 'patient_name', 'date', 'time', 'status')
-    appt_tree = ttk.Treeview(appointments_frame, columns=appt_columns, show='headings')
+    appt_columns = ('id', 'doctor_id', 'doctor_name', 'patient_id', 'patient_name', 'date', 'time', 'status') # noqa
+    appt_tree = ttk.Treeview(appointments_frame, columns=appt_columns, show='headings') # noqa
     appt_tree.heading('id', text='ID')
     appt_tree.heading('doctor_id', text='Doctor ID')
     appt_tree.heading('doctor_name', text='Doctor Name')
@@ -356,20 +380,20 @@ def admin_dashboard(dashboard, user_id):
     def refresh_appointments():
         for item in appt_tree.get_children():
             appt_tree.delete(item)
-        
+
         conn = sqlite3.connect('healthcare.db')
         c = conn.cursor()
-        c.execute('''SELECT s.id, s.doctor_id, d.name, s.patient_id, p.name, s.date, s.time, s.status 
-                     FROM schedules s
-                     LEFT JOIN users d ON s.doctor_id = d.id
-                     LEFT JOIN users p ON s.patient_id = p.id''')
+        c.execute('''SELECT s.id, s.doctor_id, d.name, s.patient_id, p.name, s.date, s.time, s.status # noqa
+                    FROM schedules s
+                    LEFT JOIN users d ON s.doctor_id = d.id
+                    LEFT JOIN users p ON s.patient_id = p.id''')
         appointments = c.fetchall()
         conn.close()
 
         for appt in appointments:
             appt_tree.insert('', 'end', values=appt)
 
-    refresh_appt_btn = ttk.Button(appointments_frame, text="Refresh", command=refresh_appointments)
+    refresh_appt_btn = ttk.Button(appointments_frame, text="Refresh", command=refresh_appointments) # noqa
     refresh_appt_btn.pack(pady=10)
 
     # Tab 3: System Reports
@@ -378,6 +402,7 @@ def admin_dashboard(dashboard, user_id):
 
     refresh_users()
     refresh_appointments()
+
 
 def doctor_dashboard(dashboard, user_id):
     notebook = ttk.Notebook(dashboard)
@@ -400,20 +425,20 @@ def doctor_dashboard(dashboard, user_id):
     def refresh_schedule():
         for item in tree.get_children():
             tree.delete(item)
-        
+
         conn = sqlite3.connect('healthcare.db')
         c = conn.cursor()
-        c.execute('''SELECT s.id, s.patient_id, u.name, s.date, s.time, s.status 
-                     FROM schedules s
-                     LEFT JOIN users u ON s.patient_id = u.id
-                     WHERE s.doctor_id=? ORDER BY s.date, s.time''', (user_id,))
+        c.execute('''SELECT s.id, s.patient_id, u.name, s.date, s.time, s.status  # noqa
+                    FROM schedules s
+                    LEFT JOIN users u ON s.patient_id = u.id
+                    WHERE s.doctor_id=? ORDER BY s.date, s.time''', (user_id,))
         appointments = c.fetchall()
         conn.close()
 
         for appt in appointments:
             tree.insert('', 'end', values=appt)
 
-    refresh_btn = ttk.Button(schedule_frame, text="Refresh Schedule", command=refresh_schedule)
+    refresh_btn = ttk.Button(schedule_frame, text="Refresh Schedule", command=refresh_schedule) # noqa
     refresh_btn.pack(pady=10)
 
     # Tab 2: Add Availability
@@ -429,25 +454,25 @@ def doctor_dashboard(dashboard, user_id):
     time_frame.pack(pady=10)
 
     ttk.Label(time_frame, text="Start Time:").grid(row=0, column=0, padx=5)
-    start_hour = ttk.Combobox(time_frame, values=[f"{h:02d}" for h in range(9, 18)], width=3)
+    start_hour = ttk.Combobox(time_frame, values=[f"{h:02d}" for h in range(9, 18)], width=3) # noqa
     start_hour.grid(row=0, column=1, padx=5)
     start_hour.set("09")
     ttk.Label(time_frame, text=":").grid(row=0, column=2)
-    start_min = ttk.Combobox(time_frame, values=["00", "15", "30", "45"], width=3)
+    start_min = ttk.Combobox(time_frame, values=["00", "15", "30", "45"], width=3) # noqa
     start_min.grid(row=0, column=3, padx=5)
     start_min.set("00")
 
     ttk.Label(time_frame, text="End Time:").grid(row=1, column=0, padx=5)
-    end_hour = ttk.Combobox(time_frame, values=[f"{h:02d}" for h in range(9, 18)], width=3)
+    end_hour = ttk.Combobox(time_frame, values=[f"{h:02d}" for h in range(9, 18)], width=3) # noqa
     end_hour.grid(row=1, column=1, padx=5)
     end_hour.set("17")
     ttk.Label(time_frame, text=":").grid(row=1, column=2)
-    end_min = ttk.Combobox(time_frame, values=["00", "15", "30", "45"], width=3)
+    end_min = ttk.Combobox(time_frame, values=["00", "15", "30", "45"], width=3) # noqa
     end_min.grid(row=1, column=3, padx=5)
     end_min.set("00")
 
-    ttk.Label(availability_frame, text="Appointment Duration (minutes):").pack(pady=5)
-    duration = ttk.Combobox(availability_frame, values=[15, 30, 45, 60], width=5)
+    ttk.Label(availability_frame, text="Appointment Duration (minutes):").pack(pady=5)  # noqa
+    duration = ttk.Combobox(availability_frame, values=[15, 30, 45, 60], width=5) # noqa
     duration.pack(pady=5)
     duration.set(30)
 
@@ -457,28 +482,27 @@ def doctor_dashboard(dashboard, user_id):
             start_time = f"{start_hour.get()}:{start_min.get()}"
             end_time = f"{end_hour.get()}:{end_min.get()}"
             duration_val = int(duration.get())
-            
+
             datetime.strptime(appt_date, "%Y-%m-%d")
             datetime.strptime(start_time, "%H:%M")
             datetime.strptime(end_time, "%H:%M")
-            
+
             conn = sqlite3.connect('healthcare.db')
             c = conn.cursor()
-            
+
             current_time = datetime.strptime(start_time, "%H:%M")
             end_time_dt = datetime.strptime(end_time, "%H:%M")
-            
-            while current_time + timedelta(minutes=duration_val) <= end_time_dt:
+
+            while current_time + timedelta(minutes=duration_val) <= end_time_dt: # noqa
                 slot_end = current_time + timedelta(minutes=duration_val)
-                
-                c.execute("SELECT id FROM schedules WHERE doctor_id=? AND date=? AND time=?",
-                         (user_id, appt_date, current_time.strftime("%H:%M")))
+
+                c.execute("SELECT id FROM schedules WHERE doctor_id=? AND date=? AND time=?", (user_id, appt_date, current_time.strftime("%H:%M"))) # noqa
                 if not c.fetchone():
-                    c.execute("INSERT INTO schedules (doctor_id, date, time) VALUES (?, ?, ?)",
-                             (user_id, appt_date, current_time.strftime("%H:%M")))
-                
+                    c.execute("INSERT INTO schedules (doctor_id, date, time) VALUES (?, ?, ?)", # noqa
+                            (user_id, appt_date, current_time.strftime("%H:%M")))   # noqa
+
                 current_time = slot_end
-            
+
             conn.commit()
             conn.close()
             messagebox.showinfo("Success", "Availability slots added!")
@@ -486,15 +510,15 @@ def doctor_dashboard(dashboard, user_id):
         except Exception as e:
             messagebox.showerror("Error", f"Invalid input: {str(e)}")
 
-    add_btn = ttk.Button(availability_frame, text="Add Availability Slots", command=add_availability)
+    add_btn = ttk.Button(availability_frame, text="Add Availability Slots", command=add_availability) # noqa
     add_btn.pack(pady=20)
 
     # Tab 3: Prescriptions
     prescriptions_frame = ttk.Frame(notebook)
     notebook.add(prescriptions_frame, text='Prescriptions')
 
-    presc_columns = ('id', 'patient_id', 'patient_name', 'date', 'prescription')
-    presc_tree = ttk.Treeview(prescriptions_frame, columns=presc_columns, show='headings')
+    presc_columns = ('id', 'patient_id', 'patient_name', 'date', 'prescription') # noqa
+    presc_tree = ttk.Treeview(prescriptions_frame, columns=presc_columns, show='headings') # noqa
     presc_tree.heading('id', text='ID')
     presc_tree.heading('patient_id', text='Patient ID')
     presc_tree.heading('patient_name', text='Patient Name')
@@ -505,28 +529,29 @@ def doctor_dashboard(dashboard, user_id):
     def refresh_prescriptions():
         for item in presc_tree.get_children():
             presc_tree.delete(item)
-        
+
         conn = sqlite3.connect('healthcare.db')
         c = conn.cursor()
-        c.execute('''SELECT p.id, p.patient_id, u.name, p.date, p.prescription 
-                     FROM prescriptions p
-                     LEFT JOIN users u ON p.patient_id = u.id
-                     WHERE p.doctor_id=? ORDER BY p.date DESC''', (user_id,))
+        c.execute('''SELECT p.id, p.patient_id, u.name, p.date, p.prescription
+                    FROM prescriptions p
+                    LEFT JOIN users u ON p.patient_id = u.id
+                    WHERE p.doctor_id=? ORDER BY p.date DESC''', (user_id,))
         prescriptions = c.fetchall()
         conn.close()
 
         for presc in prescriptions:
             presc_tree.insert('', 'end', values=presc)
 
-    new_presc_btn = ttk.Button(prescriptions_frame, text="New Prescription", 
-                              command=lambda: generate_prescription(user_id))
+    new_presc_btn = ttk.Button(prescriptions_frame, text="New Prescription",
+                            command=lambda: generate_prescription(user_id)) # noqa
     new_presc_btn.pack(pady=5)
-    
-    refresh_presc_btn = ttk.Button(prescriptions_frame, text="Refresh", command=refresh_prescriptions)
+
+    refresh_presc_btn = ttk.Button(prescriptions_frame, text="Refresh", command=refresh_prescriptions) # noqa
     refresh_presc_btn.pack(pady=5)
 
     refresh_schedule()
     refresh_prescriptions()
+
 
 def patient_dashboard(dashboard, user_id):
     notebook = ttk.Notebook(dashboard)
@@ -537,16 +562,16 @@ def patient_dashboard(dashboard, user_id):
     notebook.add(book_frame, text='Book Appointment')
 
     ttk.Label(book_frame, text="Select Doctor:").pack(pady=5)
-    
+
     conn = sqlite3.connect('healthcare.db')
     c = conn.cursor()
     c.execute("SELECT id, name, specialization FROM users WHERE role='Doctor'")
     doctors = c.fetchall()
     conn.close()
-    
+
     doctor_var = tk.StringVar()
     doctor_combo = ttk.Combobox(book_frame, textvariable=doctor_var)
-    doctor_combo['values'] = [f"{doc[0]} - {doc[1]} ({doc[2]})" for doc in doctors]
+    doctor_combo['values'] = [f"{doc[0]} - {doc[1]} ({doc[2]})" for doc in doctors] # noqa
     doctor_combo.pack(pady=5)
 
     ttk.Label(book_frame, text="Date:").pack(pady=5)
@@ -567,20 +592,20 @@ def patient_dashboard(dashboard, user_id):
             try:
                 datetime.strptime(appt_date, "%Y-%m-%d")
                 datetime.strptime(appt_time, "%H:%M")
-                
+
                 conn = sqlite3.connect('healthcare.db')
                 c = conn.cursor()
-                c.execute("INSERT INTO schedules (doctor_id, patient_id, date, time, status) VALUES (?, ?, ?, ?, ?)",
-                          (doctor_id, user_id, appt_date, appt_time, "Booked"))
+                c.execute("INSERT INTO schedules (doctor_id, patient_id, date, time, status) VALUES (?, ?, ?, ?, ?)", # noqa
+                        (doctor_id, user_id, appt_date, appt_time, "Booked")) # noqa
                 conn.commit()
                 conn.close()
-                messagebox.showinfo("Success", "Appointment booked successfully!")
+                messagebox.showinfo("Success", "Appointment booked successfully!") # noqa
             except ValueError:
-                messagebox.showerror("Error", "Invalid date or time format (Use YYYY-MM-DD and HH:MM)")
+                messagebox.showerror("Error", "Invalid date or time format (Use YYYY-MM-DD and HH:MM)")     # noqa
         else:
             messagebox.showwarning("Error", "Please fill all fields")
 
-    book_btn = ttk.Button(book_frame, text="Book Appointment", command=book_appointment)
+    book_btn = ttk.Button(book_frame, text="Book Appointment", command=book_appointment) # noqa
     book_btn.pack(pady=10)
 
     # Tab 2: My Prescriptions
@@ -588,7 +613,7 @@ def patient_dashboard(dashboard, user_id):
     notebook.add(prescriptions_frame, text='My Prescriptions')
 
     presc_columns = ('id', 'doctor_name', 'date', 'prescription')
-    presc_tree = ttk.Treeview(prescriptions_frame, columns=presc_columns, show='headings')
+    presc_tree = ttk.Treeview(prescriptions_frame, columns=presc_columns, show='headings') # noqa
     presc_tree.heading('id', text='ID')
     presc_tree.heading('doctor_name', text='Doctor')
     presc_tree.heading('date', text='Date')
@@ -598,13 +623,13 @@ def patient_dashboard(dashboard, user_id):
     def refresh_prescriptions():
         for item in presc_tree.get_children():
             presc_tree.delete(item)
-        
+
         conn = sqlite3.connect('healthcare.db')
         c = conn.cursor()
-        c.execute('''SELECT p.id, u.name, p.date, p.prescription 
-                     FROM prescriptions p
-                     LEFT JOIN users u ON p.doctor_id = u.id
-                     WHERE p.patient_id=? ORDER BY p.date DESC''', (user_id,))
+        c.execute('''SELECT p.id, u.name, p.date, p.prescription
+                    FROM prescriptions p
+                    LEFT JOIN users u ON p.doctor_id = u.id
+                    WHERE p.patient_id=? ORDER BY p.date DESC''', (user_id,))
         prescriptions = c.fetchall()
         conn.close()
 
@@ -616,28 +641,29 @@ def patient_dashboard(dashboard, user_id):
         if selected:
             item = presc_tree.item(selected[0])
             presc_id = item['values'][0]
-            
+
             conn = sqlite3.connect('healthcare.db')
             c = conn.cursor()
-            c.execute("SELECT prescription FROM prescriptions WHERE id=?", (presc_id,))
+            c.execute("SELECT prescription FROM prescriptions WHERE id=?", (presc_id,)) # noqa
             prescription = c.fetchone()
             conn.close()
-            
+
             if prescription:
                 with open(f"prescription_{presc_id}.txt", "w") as f:
                     f.write(prescription[0])
-                messagebox.showinfo("Success", f"Prescription {presc_id} downloaded!")
+                messagebox.showinfo("Success", f"Prescription {presc_id} downloaded!") # noqa
             else:
                 messagebox.showerror("Error", "Prescription not found")
 
-    refresh_btn = ttk.Button(prescriptions_frame, text="Refresh", command=refresh_prescriptions)
+    refresh_btn = ttk.Button(prescriptions_frame, text="Refresh", command=refresh_prescriptions) # noqa
     refresh_btn.pack(pady=5)
-    
-    download_btn = ttk.Button(prescriptions_frame, text="Download Selected", 
-                             command=download_selected_prescription)
+
+    download_btn = ttk.Button(prescriptions_frame, text="Download Selected",
+                            command=download_selected_prescription) # noqa
     download_btn.pack(pady=5)
 
     refresh_prescriptions()
+
 
 # GUI Setup
 root = tk.Tk()
@@ -661,11 +687,12 @@ entry_name.grid(row=2, column=1)
 
 tk.Label(frame_register, text="Role:").grid(row=3, column=0)
 role_var = tk.StringVar(value="Patient")
-tk.Radiobutton(frame_register, text="Patient", variable=role_var, value="Patient").grid(row=3, column=1)
-tk.Radiobutton(frame_register, text="Doctor", variable=role_var, value="Doctor").grid(row=3, column=2)
-tk.Radiobutton(frame_register, text="Admin", variable=role_var, value="Admin").grid(row=3, column=3)
+tk.Radiobutton(frame_register, text="Patient", variable=role_var, value="Patient").grid(row=3, column=1) # noqa
+tk.Radiobutton(frame_register, text="Doctor", variable=role_var, value="Doctor").grid(row=3, column=2) # noqa
+tk.Radiobutton(frame_register, text="Admin", variable=role_var, value="Admin").grid(row=3, column=3) # noqa
 
-tk.Button(frame_register, text="Register", command=register_user).grid(row=4, column=1)
+tk.Button(frame_register, text="Register", command=register_user).grid(row=4, column=1) # noqa
+
 
 # Login Frame
 frame_login = tk.LabelFrame(root, text="Login", padx=20, pady=20)
